@@ -1,7 +1,7 @@
 {
   "name": "chromastack",
   "productName": "ChromaStack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Farbbilder aus Filament: Bilder und PDFs in mehrfarbige Schichtdrucke für Bambu Lab und andere Mehrfarbdrucker umwandeln.",
   "type": "module",
   "main": "electron/main.js",
@@ -56,7 +56,8 @@
           ]
         }
       ],
-      "identity": null
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "dmg": {
       "title": "ChromaStack ${version}"

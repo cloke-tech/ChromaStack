@@ -20,8 +20,10 @@ aber genauso jede andere Farbauswahl. Das fertige Projekt wird direkt im Slicer 
 
 ## Installation
 Installer gibt es unter *Releases* bzw. als Artefakte der GitHub-Actions-Builds:
-- **macOS:** `.dmg` (Apple Silicon und Intel). Die App ist nicht notarisiert: beim ersten Start
-  Rechtsklick → *Öffnen*, oder `xattr -dr com.apple.quarantine /Applications/ChromaStack.app`.
+- **macOS:** `.dmg` (Apple Silicon: `arm64`, Intel: `x64`). Die App ist nicht bei Apple notarisiert.
+  Beim ersten Start meldet macOS deshalb, dass die App nicht überprüft werden kann. Dann unter
+  *Systemeinstellungen → Datenschutz & Sicherheit* auf *Trotzdem öffnen* klicken – oder einmal im Terminal:
+  `xattr -dr com.apple.quarantine /Applications/ChromaStack.app`
 - **Windows:** `.exe`-Installer
 - **Linux:** `.AppImage` oder `.deb`
 
