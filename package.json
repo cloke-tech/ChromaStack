@@ -1,0 +1,98 @@
+{
+  "name": "chromastack",
+  "productName": "ChromaStack",
+  "version": "1.0.0",
+  "description": "Farbbilder aus Filament: Bilder und PDFs in mehrfarbige Schichtdrucke für Bambu Lab und andere Mehrfarbdrucker umwandeln.",
+  "type": "module",
+  "main": "electron/main.js",
+  "private": true,
+  "author": {
+    "name": "cloke-tech",
+    "email": "171316801+cloke-tech@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/cloke-tech/ChromaStack",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "serve": "node backend/server.js",
+    "test": "node tools/selftest.mjs dist-test.3mf 80 && node -e \"require('fs').rmSync('dist-test.3mf')\"",
+    "icon": "node tools/make-icon.mjs",
+    "i18n": "python3 tools/i18n_table.py",
+    "dist": "electron-builder --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "tech.cloke.chromastack",
+    "productName": "ChromaStack",
+    "copyright": "© 2026 cloke-tech",
+    "files": [
+      "electron/**",
+      "backend/**",
+      "web/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "title": "ChromaStack ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Graphics",
+      "maintainer": "cloke-tech <171316801+cloke-tech@users.noreply.github.com>",
+      "synopsis": "Farbbilder aus Filament für Mehrfarb-3D-Drucker"
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "allowScripts": {
+    "electron@45.4.1": true,
+    "electron-winstaller@5.4.0": true
+  }
+}

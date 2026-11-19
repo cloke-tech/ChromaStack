@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChromaStack</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='12' r='8' fill='%2300a6e0' fill-opacity='.85'/%3E%3Ccircle cx='20' cy='12' r='8' fill='%23e5007e' fill-opacity='.85'/%3E%3Ccircle cx='16' cy='19' r='8' fill='%23ffe600' fill-opacity='.85'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><i class="c"></i><i class="m"></i><i class="y"></i></span>
+    <div><h1>ChromaStack</h1><p>Farbbilder aus Filament – für Bambu Lab und andere Mehrfarbdrucker</p></div>
+  </div>
+  <button id="printerBtn" class="pill" type="button" title="Drucker und Slicer einrichten">Einrichtung …</button>
+</header>
+
+<main class="layout">
+  <aside class="panel" id="panel">
+    <section class="card">
+      <h2>Vorlage</h2>
+      <label id="drop" class="drop" tabindex="0">
+        <input id="file" type="file" accept="image/*,application/pdf,.pdf,.svg" hidden>
+        <strong>Bild oder PDF hierher ziehen</strong>
+        <span id="pasteHint">oder klicken · Einfügen mit ⌘V</span>
+      </label>
+      <div id="sourceInfo" class="muted small"></div>
+      <div id="pdfRow" class="row hidden">
+        <label>PDF-Seite <select id="pdfPage"></select></label>
+      </div>
+      <button id="calibBtn" class="ghost wide" type="button">Kalibrierkarte erzeugen</button>
+    </section>
+
+    <section class="card">
+      <h2>Größe</h2>
+      <div class="row">
+        <label class="grow">Format
+          <select id="preset">
+            <option value="custom">Frei (Seitenverhältnis der Vorlage)</option>
+            <option value="100x150">10 × 15 cm</option>
+            <option value="130x180">13 × 18 cm</option>
+            <option value="105x148">A6 (105 × 148 mm)</option>
+            <option value="148x210">A5 (148 × 210 mm)</option>
+            <option value="100x100">100 × 100 mm</option>
+            <option value="150x150">150 × 150 mm</option>
+            <option value="200x200">200 × 200 mm</option>
+            <option value="85x54">Kartengröße (85 × 54 mm)</option>
+          </select>
+        </label>
+        <button id="rotate" class="icon" type="button" title="Hoch-/Querformat tauschen">⟲</button>
+      </div>
+      <div class="row">
+        <label>Breite <span class="unit"><input id="width" type="number" min="10" max="256" step="1" value="120">mm</span></label>
+        <button id="lock" class="icon on" type="button" title="Seitenverhältnis sperren" aria-pressed="true">🔗</button>
+        <label>Höhe <span class="unit"><input id="height" type="number" min="10" max="256" step="1" value="90">mm</span></label>
+      </div>
+      <div class="row">
+        <label class="grow">Einpassen
+          <select id="fit">
+            <option value="cover">Füllen (zuschneiden)</option>
+            <option value="contain">Einpassen (weißer Rand)</option>
+            <option value="stretch">Strecken</option>
+          </select>
+        </label>
+        <label>Rand <span class="unit"><input id="border" type="number" min="0" max="30" step="0.5" value="0">mm</span></label>
+      </div>
+      <label>Pixelgröße <output id="pixelOut"></output>
+        <input id="pixel" type="range" min="0.2" max="1.2" step="0.05" value="0.5">
+      </label>
+      <div id="sizeInfo" class="muted small"></div>
+    </section>
+
+    <section class="card">
+      <h2>Bild <button id="resetAdjust" class="link" type="button">zurücksetzen</button></h2>
+      <label>Helligkeit <output for="brightness"></output><input id="brightness" type="range" min="-60" max="60" value="0"></label>
+      <label>Kontrast <output for="contrast"></output><input id="contrast" type="range" min="-80" max="80" value="0"></label>
+      <label>Sättigung <output for="saturation"></output><input id="saturation" type="range" min="-100" max="100" value="0"></label>
+      <label>Gamma <output for="gamma"></output><input id="gamma" type="range" min="0.5" max="2" step="0.05" value="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Filamente</h2>
+      <p class="muted small">Beliebige Farben und Sorten – Schwarz ist optional. Nr. = Filament-Nummer im Slicer. TD = Lichtdurchlässigkeit (mm), mit der Kalibrierkarte abgleichen.</p>
+      <button id="importLoaded" class="ghost wide" type="button" title="Liest die Filamentliste aus dem Slicer. Bei Bambu vorher „AMS synchronisieren“ klicken.">Was im Drucker ist übernehmen</button>
+      <div id="filaments" class="filaments"></div>
+      <div class="row">
+        <button id="findBest" class="ghost grow" type="button" title="Probiert alle Kombinationen der verfügbaren Farben und wählt die, die das Bild am besten trifft.">Beste Kombination finden</button>
+        <label>max. Farben <select id="maxColors"><option>2</option><option>3</option><option selected>4</option><option>5</option></select></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Drucker &amp; Schichten</h2>
+      <div class="printer-line"><span id="printerInfo" class="small">Kein Drucker gewählt</span><button id="printerChange" class="link" type="button">ändern</button></div>
+      <div id="printerWarn" class="small warn hidden"></div>
+      <div class="row">
+        <label>Schichthöhe
+          <select id="layerHeight"><option>0.06</option><option selected>0.08</option><option>0.1</option><option>0.12</option></select>
+        </label>
+      </div>
+      <label>Farbschichten <output for="colorLayers"></output><input id="colorLayers" type="range" min="3" max="16" value="8"></label>
+      <div class="row">
+        <label>Erste Schicht <span class="unit"><input id="firstLayer" type="number" min="0.1" max="0.3" step="0.02" value="0.2">mm</span></label>
+        <label>Weiße Basis <span class="unit"><input id="baseThickness" type="number" min="0.3" max="3" step="0.04" value="0.6">mm</span></label>
+      </div>
+      <label class="check"><input id="singleWall" type="checkbox" checked> Eine Wand je Farbfläche (kleine Details bleiben erhalten)</label>
+    </section>
+
+    <section class="card">
+      <h2>Farbumsetzung</h2>
+      <label>Rasterung
+        <select id="dither">
+          <option value="none">Aus (flächig, wenige Inseln)</option>
+          <option value="fs">Floyd-Steinberg (feinere Verläufe)</option>
+          <option value="atkinson">Atkinson (kontrastreich)</option>
+        </select>
+      </label>
+      <label>Glätten <output for="smooth"></output><input id="smooth" type="range" min="0" max="3" value="1"></label>
+      <label class="check"><input id="fitLightness" type="checkbox" checked> Helligkeit an den druckbaren Bereich anpassen</label>
+      <label class="check"><input id="interleave" type="checkbox" checked> Farbschichten verschachteln (C M Y C M Y … mischt besser)</label>
+      <details>
+        <summary>Erweitert</summary>
+        <label>Streuung (Modell) <output for="scatter"></output><input id="scatter" type="range" min="1" max="12" step="0.5" value="4"></label>
+        <label>Max. Schichten je Farbe <output for="maxPer"></output><input id="maxPer" type="range" min="1" max="16" value="16"></label>
+        <label>Untergrund hinter dem Druck
+          <select id="backing"><option value="0.8" selected>hell (Wand, Papier)</option><option value="0.3">neutral</option><option value="0.02">dunkel</option></select>
+        </label>
+      </details>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <nav class="tabs" role="tablist">
+      <button role="tab" class="tab on" data-tab="preview">Vorschau</button>
+      <button role="tab" class="tab" data-tab="layers">Schichten</button>
+      <button role="tab" class="tab" data-tab="three">3D</button>
+      <span class="spacer"></span>
+      <span id="busy" class="busy hidden">Berechne …</span>
+    </nav>
+
+    <div class="view on" id="view-preview">
+      <div id="compare" class="compare">
+        <div class="empty" id="empty">
+          <p><strong>Noch keine Vorlage.</strong></p>
+          <p class="muted">Ziehe ein Bild oder PDF links hinein – oder erzeuge zuerst eine Kalibrierkarte, um die Filamente abzustimmen.</p>
+        </div>
+        <div class="frame hidden" id="frame">
+          <canvas id="cTarget"></canvas>
+          <canvas id="cSim"></canvas>
+          <div class="labels" id="calibLabels"></div>
+          <div class="divider" id="divider"><span>◀ Vorlage · Druck ▶</span></div>
+        </div>
+      </div>
+      <div class="viewbar">
+        <label class="check"><input id="showSplit" type="checkbox" checked> Vergleich</label>
+        <label class="check"><input id="pixelated" type="checkbox"> Pixel zeigen</label>
+        <span class="spacer"></span>
+        <span id="scaleInfo" class="muted small"></span>
+      </div>
+    </div>
+
+    <div class="view" id="view-layers">
+      <div class="compare"><div class="frame" id="layerFrame"><canvas id="cLayer"></canvas></div></div>
+      <div class="viewbar">
+        <label class="grow">Schicht <output id="layerOut"></output><input id="layerSlider" type="range" min="-1" max="7" value="7"></label>
+        <span id="layerLegend" class="legend"></span>
+      </div>
+    </div>
+
+    <div class="view" id="view-three">
+      <div id="three" class="three"></div>
+      <div class="viewbar"><span class="muted small">Ziehen zum Drehen · Scrollen zum Zoomen · Rechtsklick zum Verschieben</span>
+        <span class="spacer"></span><label class="check"><input id="explode" type="checkbox"> Schichten auseinanderziehen</label></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="card">
+      <h2>Übersicht</h2>
+      <dl id="stats" class="stats"></dl>
+      <div id="usage" class="usage"></div>
+    </section>
+    <section class="card">
+      <h2>Drucken</h2>
+      <label class="check"><input id="doSlice" type="checkbox" checked> Gleich slicen (Druckzeit, G-Code)</label>
+      <button id="buildBtn" class="primary wide" type="button" disabled>Projekt erstellen</button>
+      <button id="quickBtn" class="ghost wide" type="button" disabled>Nur 3MF herunterladen</button>
+      <div id="result" class="result hidden"></div>
+      <details class="hint">
+        <summary>So druckst du es</summary>
+        <ol class="small">
+          <li>Projekt im Slicer öffnen – Drucker, Filamente und Schichthöhe sind gesetzt.</li>
+          <li>Beim Senden die Filamente den Fächern im AMS bzw. Farbwechsler zuordnen (gleiche Farben wie in der Liste links).</li>
+          <li>Glatte oder strukturierte PEI-Platte, Bild zeigt nach oben.</li>
+          <li>Erst die Kalibrierkarte drucken und die TD-Werte so anpassen, dass die Vorschau dem Druck entspricht.</li>
+        </ol>
+      </details>
+    </section>
+  </aside>
+</main>
+<dialog id="setup" class="setup">
+  <form method="dialog" class="setup-body">
+    <header><h2>Einrichtung</h2><p class="muted small">Wähle Sprache, Slicer und Drucker. Du kannst das jederzeit oben rechts ändern.</p></header>
+    <section>
+      <h3><span class="step">0</span> Sprache</h3>
+      <select id="langSelect"></select>
+    </section>
+    <section>
+      <h3><span class="step">1</span> Slicer</h3>
+      <p class="muted small">Der Slicer baut das fertige Druckprojekt. Ohne Slicer kannst du nur eine 3MF-Datei exportieren.</p>
+      <div id="slicerList" class="choice-list"></div>
+    </section>
+    <section>
+      <h3><span class="step">2</span> Drucker</h3>
+      <div class="row">
+        <label class="grow">Suchen <input id="printerSearch" type="search" placeholder="z. B. X2D, A1, K1C …"></label>
+      </div>
+      <div class="row">
+        <label class="grow">Modell <select id="printerModel"></select></label>
+        <label>Düse <select id="printerNozzle"></select></label>
+      </div>
+      <div id="printerHint" class="small muted"></div>
+    </section>
+    <section>
+      <h3><span class="step">3</span> Filamente</h3>
+      <p class="muted small">Was steckt gerade im Drucker? Bei Bambu-Druckern vorher in Bambu Studio „AMS synchronisieren“ klicken.</p>
+      <div class="row">
+        <button type="button" id="setupImport" class="ghost grow">Aus dem Slicer übernehmen</button>
+        <button type="button" id="setupCmyk" class="ghost grow">CMYK + Weiß</button>
+      </div>
+      <div id="setupFilaments" class="swatches"></div>
+    </section>
+    <section>
+      <h3><span class="step">4</span> Speicherort</h3>
+      <div class="row"><span id="outDir" class="small path grow"></span><button type="button" id="outDirBtn" class="ghost">Ändern …</button></div>
+    </section>
+    <footer><button value="cancel" class="ghost" id="setupCancel">Abbrechen</button><button value="ok" class="primary" id="setupOk">Fertig</button></footer>
+  </form>
+</dialog>
+<div id="toast" class="toast hidden"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
